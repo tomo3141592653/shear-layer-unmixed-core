@@ -1,4 +1,4 @@
-# 図と paper_numbers.py が開く結果ファイルと、2.6 節・限界(5)で引く種・格子の計算。98 個・234M
+# 図と paper_numbers.py が開く結果ファイルと、2.6 節・限界(5)で引く種・格子の計算。99 個・234M
 ch_w008.npz	162 KB
 mrsL_eps1.npz	5102 KB
 mrsL_eps1_e0.85.npz	5086 KB
@@ -55,6 +55,7 @@ ns_w008_nu3e-4_hires_e6_s2.log	1 KB
 ns_w008_nu3e-4_hires_e6_s2.npz	3738 KB
 ns_w008_nu3e-4_hires_e6_s3.log	1 KB
 ns_w008_nu3e-4_hires_e6_s3.npz	3727 KB
+ns_w008_nu3e-4_hires_lp512.log	0 KB
 ns_w008_nu3e-4_lores_a2.5e-4.log	1 KB
 ns_w008_nu3e-4_lores_a2.5e-4.npz	242 KB
 ns_w008_nu3e-4_lores_a2.5e-4_s2.log	1 KB

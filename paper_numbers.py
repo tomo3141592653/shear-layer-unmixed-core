@@ -198,7 +198,7 @@ print("== 3.1 超粘性の収束（倍の格子 1024×2048・ν4=3.9e-21 と 512
 if os.path.exists("ns_w008_hyper_g1024.log"):
     def hl(f):
         return {float(t): (float(a), float(c), float(e)) for t, e, a, b, c in re.findall(r"t=\s*([\d.]+) E/E0=([\d.]+) core\(r=\.05/\.1/\.2\)=([\d.]+)/([\d.]+)/([\d.]+)", open(f).read())}
-    A, G = hl("ns_w008_hyper.log"), hl("ns_w008_hyper_g1024.log")
+    A, G = hl("ns_w008_hyper18_t100.log"), hl("ns_w008_hyper_g1024.log")   # 元の格子は t=100 まで回し直した版（ns_w008_hyper.log と時間の欄以外同じ）
     ts = [t for t in G if 30 <= t <= 100]
     print(f"  r=0.2: 倍の格子 {min(G[t][1] for t in ts):.3f}〜{max(G[t][1] for t in ts):.3f}  最大差 {max(abs(G[t][1] - A[t][1]) for t in ts):.3f}  中心 t=100 {G[100.0][0]:.3f}  |E/E0−1|≤{max(abs(G[t][2] - 1) for t in G):.5f}")
 print("== 3.1 超粘性のエンストロフィーと渦度の面積分布（hyper_casimir.py、元 ν4=1e-18 と倍 ν4=3.9e-21）、ν4 k_c^8")
