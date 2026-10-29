@@ -205,3 +205,6 @@ print("== 3.1 超粘性のエンストロフィーと渦度の面積分布（hyp
 print(f"  ν4 k_c^8: 元 {1e-18 * (512 / 3)**8:.2f}  倍 {3.9e-21 * (1024 / 3)**8:.2f}")
 if os.path.exists("ns_w008_hyper18_t100.npz"):
     print("  " + run("hyper_casimir.py", "ns_w008_hyper18_t100.npz", "ns_w008_hyper_g1024.npz").replace("\n", "\n  ").rstrip())
+print("== 4 議論: 芯の中心が MRS の最大渦度の何倍か（VIC の中心 1.0、超粘性の中心 0.96 / γ0）")
+m2, mL = (float(np.load(f)["G"].max()) * 0.08 for f in ("mrs_w008_256.npz", "mrsL_eps3.npz"))
+print(f"  2値 MRS の最大 {m2:.3f} → VIC {1.0 / m2:.2f} 倍   多段 MRS の最大 {mL:.3f} → 超粘性 {0.96 / mL:.2f} 倍")
