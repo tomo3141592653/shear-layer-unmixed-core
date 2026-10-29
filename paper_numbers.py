@@ -3,7 +3,7 @@
 
     python paper_numbers.py
 """
-import re, subprocess, sys
+import os, re, subprocess, sys
 import numpy as np
 
 PY = sys.executable
@@ -101,7 +101,13 @@ v = [float(m.group(1)) for s in (3, 4, 5) for m in re.finditer(r"core\(r=.05/.1/
 print(f"  {min(v):.3f}〜{max(v):.3f}")
 
 print("== 2.6 縁の物理の幅をそろえた 3 つの格子（ν=3e-4）: 同じ E での芯、多段 MRS(E) との交点、拡散模型との差（t0=50）")
-for name, f in (("半分 256×512 ε=1.5dz", "ns_w008_nu3e-4_lores_e15"), ("元 512×1024 ε=3dz", "ns_w008_nu3e-4"), ("倍 1024×2048 ε=6dz", "ns_w008_nu3e-4_hires_e6")):
+grids = (("半分 256×512 ε=1.5dz", "ns_w008_nu3e-4_lores_e15"), ("元 512×1024 ε=3dz", "ns_w008_nu3e-4"), ("倍 1024×2048 ε=6dz", "ns_w008_nu3e-4_hires_e6"),
+         # ゆらぎを 256×512 で作って補間した初期場（--noise-grid 256,512）。半分の格子は lores_e15 と同じ初期場になる
+         ("ゆらぎ共通 元 512×1024", "ns_w008_nu3e-4_pn512"), ("ゆらぎ共通 倍 1024×2048", "ns_w008_nu3e-4_pn1024"))
+for name, f in grids:
+    if not os.path.exists(f + ".npz"):
+        print(f"  {name}: {f}.npz が無い")
+        continue
     r = nslog(f + ".log", 40)
     E = np.array([e for _, e, _ in r]); y = np.array([c for _, _, c in r])
     at = " ".join(f"E={e}:{np.interp(e, E[::-1], y[::-1], left=np.nan, right=np.nan):.3f}" for e in (0.96, 0.95, 0.94, 0.93))
@@ -113,3 +119,89 @@ for name, f in (("半分 256×512 ε=1.5dz", "ns_w008_nu3e-4_lores_e15"), ("元 
             x = [float(v) for v in re.findall(r"\d+\.\d+", l)]
             me, mc = max(me, abs(x[0] - x[2])), max(mc, abs(x[1] - x[3]))
     print(f"  {name}: {at}  交点 {cr}  拡散模型 |Δ芯|≤{mc:.4f} |ΔE|≤{me:.5f}")
+
+def core_at(f, Es=(0.96, 0.95, 0.94, 0.93), tmax=200):
+    r = [x for x in nslog(f + ".log", 40) if x[0] <= tmax]
+    E = np.array([e for _, e, _ in r]); y = np.array([c for _, _, c in r])
+    return [float(np.interp(e, E[::-1], y[::-1], left=np.nan, right=np.nan)) for e in Es]
+
+print("== 2.6 同じ初期場の 3 格子の差（t≥40、芯 r=0.2 と E/E0）")
+logs = {k: {t: (E, y) for t, E, y in nslog(f"ns_w008_nu3e-4_{k}.log", 40)} for k in ("lores_e15", "pn512", "pn1024") if os.path.exists(f"ns_w008_nu3e-4_{k}.log")}
+for a_, b_ in (("lores_e15", "pn512"), ("pn512", "pn1024")):
+    if a_ in logs and b_ in logs:
+        ts = [t for t in logs[a_] if t in logs[b_]]
+        print(f"  {a_}↔{b_}: t={min(ts):.0f}〜{max(ts):.0f} 芯 {max(abs(logs[a_][t][1] - logs[b_][t][1]) for t in ts):.3f}  E/E0 {max(abs(logs[a_][t][0] - logs[b_][t][0]) for t in ts):.5f}")
+
+print("== 2.6 半分の格子の種 1〜6（E/E0=0.96/0.95/0.94/0.93 の芯、交点）")
+rows, crs = [], []
+for s in ("", "_s2", "_s3", "_s4", "_s5", "_s6"):
+    f = "ns_w008_nu3e-4_lores_e15" + s
+    rows.append(core_at(f))
+    crs.append(float(re.search(r"横切り t=\d+ E=([\d.]+)", run("crossing.py", f + ".log")).group(1)))
+a = np.array(rows)
+print("  平均 " + " ".join(f"{x:.3f}" for x in a.mean(0)) + "  標準偏差 " + " ".join(f"{x:.3f}" for x in a.std(0, ddof=1)) + "  幅 " + " ".join(f"{x:.3f}〜{y:.3f}" for x, y in zip(a.min(0), a.max(0))))
+print(f"  交点 E/E0={min(crs):.3f}〜{max(crs):.3f}")
+print("== 2.6 ゆらぎの振幅だけを変える（半分の格子・種1、E/E0=0.95 の芯）")
+base = core_at("ns_w008_nu3e-4_lores_e15")[1]
+for A in ("5e-4", "2.5e-4"):
+    print(f"  振幅 {A}: {core_at('ns_w008_nu3e-4_lores_a' + A)[1]:.3f}（元 {base:.3f}、差 {core_at('ns_w008_nu3e-4_lores_a' + A)[1] - base:+.3f}）")
+for s in ("_s2", "_s3"):
+    if os.path.exists(f"ns_w008_nu3e-4_lores_a2.5e-4{s}.log"):
+        v, b0 = core_at("ns_w008_nu3e-4_lores_a2.5e-4" + s)[1], core_at("ns_w008_nu3e-4_lores_e15" + s)[1]
+        print(f"  振幅 2.5e-4 種{s[2:]}: {v:.3f}（元 {b0:.3f}、差 {v - b0:+.3f}）")
+print("== 2.6 格子点ごとのゆらぎの計算の E/E0=0.95 の芯（半分の格子の種 1〜6 の平均との差）")
+m = a.mean(0)[1]
+for name, f in (("元 種1", "ns_w008_nu3e-4"), ("元 種2", "ns_w008_nu3e-4_s2"), ("倍 種1", "ns_w008_nu3e-4_hires_e6"), ("元 細かい成分を落とした", "ns_w008_nu3e-4_lp256")):
+    if os.path.exists(f + ".log"):
+        v = core_at(f, tmax=400)[1]
+        print(f"  {name}: {v:.3f}（平均 {m:.3f} との差 {v - m:+.3f}）")
+print("== 2.6 元の格子・格子点ごとのゆらぎの種 1〜5（E/E0=0.96/0.95/0.94/0.93 の芯、交点、拡散模型）")
+rows, crs = [], []
+for s in ("", "_s2", "_s3", "_s4", "_s5"):
+    f = "ns_w008_nu3e-4" + s
+    if not os.path.exists(f + ".log"):
+        continue
+    rows.append(core_at(f))
+    crs.append(float(re.search(r"横切り t=\d+ E=([\d.]+)", run("crossing.py", f + ".log")).group(1)))
+b = np.array(rows)
+print(f"  {len(rows)} 種 平均 " + " ".join(f"{x:.3f}" for x in b.mean(0)) + "  標準偏差 " + " ".join(f"{x:.3f}" for x in b.std(0, ddof=1)) + f"  半分の格子の平均との差（E=0.95） {b.mean(0)[1] - a.mean(0)[1]:+.3f}")
+print(f"  交点 E/E0={min(crs):.3f}〜{max(crs):.3f}")
+print("== 2.6 倍の格子・格子点ごとのゆらぎの種 1〜3（E/E0=0.95 の芯、交点、拡散模型 t0=50）")
+for s in ("", "_s2", "_s3"):
+    f = "ns_w008_nu3e-4_hires_e6" + s
+    if not os.path.exists(f + ".npz"):
+        continue
+    cr = re.search(r"横切り t=\d+ E=([\d.]+)", run("crossing.py", f + ".log")).group(1)
+    out = subprocess.run([PY, "/tmp/_diffuse_hi.py", "--nu", "3e-4", "--file", f + ".npz", "--log", f + ".log", "--t0", "50"], capture_output=True, text=True).stdout
+    me = mc = 0.0
+    for l in out.splitlines():
+        if l.startswith("t=") and "NS" in l:
+            x = [float(v) for v in re.findall(r"\d+\.\d+", l)]
+            me, mc = max(me, abs(x[0] - x[2])), max(mc, abs(x[1] - x[3]))
+    print(f"  種{s[2:] or '1'}: {core_at(f)[1]:.3f}  交点 E/E0={cr}  拡散模型 |Δ芯|≤{mc:.4f} |ΔE|≤{me:.5f}")
+print("== 2.6 倍の格子・種1 から元の格子で表せない成分を落とす（lp512）、E/E0=0.97/0.96/0.95 の芯")
+if os.path.exists("ns_w008_nu3e-4_hires_lp512.log"):
+    for f in ("ns_w008_nu3e-4_hires_e6", "ns_w008_nu3e-4_hires_lp512"):
+        print(f"  {f}: " + " ".join(f"{v:.3f}" for v in core_at(f, Es=(0.97, 0.96, 0.95))))
+from math import sqrt
+def welch(x, y):
+    x, y = np.array(x), np.array(y)
+    return (y.mean() - x.mean()) / sqrt(x.var(ddof=1) / len(x) + y.var(ddof=1) / len(y))
+hs = [core_at("ns_w008_nu3e-4_hires_e6" + s)[1] for s in ("", "_s2", "_s3") if os.path.exists("ns_w008_nu3e-4_hires_e6" + s + ".log")]
+print(f"  倍の格子 {len(hs)} 種 平均 {np.mean(hs):.3f} 標準偏差 {np.std(hs, ddof=1):.3f}  ウェルチ t: 元−半分 {welch(a[:, 1], b[:, 1]):.2f}  倍−元 {welch(b[:, 1], hs):.2f}")
+print("== 3.1 VIC の収束（粒子 10⁶・格子 256/384、t=35/48/100 の芯 r=0.05/0.1/0.2）")
+for f in ("run_w008.npz", "vic_w008_np1m.npz", "vic_w008_np1m_g384.npz"):
+    if os.path.exists(f):
+        v = [(m.group(1), m.group(2), m.group(3), m.group(4)) for m in re.finditer(r"t=(\d+) core\(r=.05/.1/.2\)=([\d.]+)/([\d.]+)/([\d.]+)", run("vic_core_circle.py", f)) if m.group(1) in ("35", "48", "100")]
+        print(f"  {f}: " + "  ".join(f"t={t} {a}/{b}/{c}" for t, a, b, c in v))
+print("== 3.1 超粘性の収束（倍の格子 1024×2048・ν4=3.9e-21 と 512×1024・ν4=1e-18、t=30〜100 の芯 r=0.2 と中心 r=0.05）")
+if os.path.exists("ns_w008_hyper_g1024.log"):
+    def hl(f):
+        return {float(t): (float(a), float(c), float(e)) for t, e, a, b, c in re.findall(r"t=\s*([\d.]+) E/E0=([\d.]+) core\(r=\.05/\.1/\.2\)=([\d.]+)/([\d.]+)/([\d.]+)", open(f).read())}
+    A, G = hl("ns_w008_hyper.log"), hl("ns_w008_hyper_g1024.log")
+    ts = [t for t in G if 30 <= t <= 100]
+    print(f"  r=0.2: 倍の格子 {min(G[t][1] for t in ts):.3f}〜{max(G[t][1] for t in ts):.3f}  最大差 {max(abs(G[t][1] - A[t][1]) for t in ts):.3f}  中心 t=100 {G[100.0][0]:.3f}  |E/E0−1|≤{max(abs(G[t][2] - 1) for t in G):.5f}")
+print("== 3.1 超粘性のエンストロフィーと渦度の面積分布（hyper_casimir.py、元 ν4=1e-18 と倍 ν4=3.9e-21）、ν4 k_c^8")
+print(f"  ν4 k_c^8: 元 {1e-18 * (512 / 3)**8:.2f}  倍 {3.9e-21 * (1024 / 3)**8:.2f}")
+if os.path.exists("ns_w008_hyper18_t100.npz"):
+    print("  " + run("hyper_casimir.py", "ns_w008_hyper18_t100.npz", "ns_w008_hyper_g1024.npz").replace("\n", "\n  ").rstrip())

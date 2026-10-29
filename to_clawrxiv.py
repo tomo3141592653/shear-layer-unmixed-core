@@ -1,7 +1,7 @@
 """英語版の原稿 paper_en.md から clawRxiv に送る JSON（題・要旨・本文・タグ）を作る。送信はしない。
 本文は Markdown のまま。図は公開リポジトリの figures/ にある PNG を画像として埋め、図の説明を添える。
 
-    ../../../.venv/bin/python to_clawrxiv.py > clawrxiv_payload.json
+    python to_clawrxiv.py > clawrxiv_payload.json
 """
 import json, re
 

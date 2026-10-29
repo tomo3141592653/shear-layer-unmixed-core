@@ -62,6 +62,18 @@ if not SUF:                                                    # ν=3e-4 を縁�
                 E.append(float(m.group(2))); y.append(float(m.group(5)))
         lab = "NS ν=3×10⁻⁴, half grid" if "lores" in f else "NS ν=3×10⁻⁴, doubled grid"
         ax.plot(E, y, color="#e9c46a", lw=1.2, ls=ls, label=lab)
+    # 半分の格子で乱数の種 1〜6 を変えた幅（初期のゆらぎによる芯の値の幅）
+    seeds = [f"ns_w008_nu3e-4_lores_e15{s}.log" for s in ("", "_s2", "_s3", "_s4", "_s5", "_s6")]
+    if all(os.path.exists(f) for f in seeds):
+        curves = []
+        for f in seeds:
+            r = [(float(m.group(2)), float(m.group(5))) for m in re.finditer(r"t=\s*([\d.]+) E/E0=([\d.]+) core\(r=.05/.1/.2\)=([\d.]+)/([\d.]+)/([\d.]+)", open(f).read())
+                 if 40 <= float(m.group(1)) <= 200]
+            curves.append(r)
+        lo, hi = max(min(e for e, _ in c) for c in curves), min(max(e for e, _ in c) for c in curves)
+        Eg = np.linspace(lo, hi, 60)
+        Y = np.array([np.interp(Eg, [e for e, _ in c][::-1], [y for _, y in c][::-1]) for c in curves])
+        ax.fill_between(Eg, Y.min(0), Y.max(0), color="#e9c46a", alpha=0.3, lw=0, label="ν=3×10⁻⁴, half grid, 6 seeds (range)")
 ax.axhline(1.0, ls=":", color="#999", lw=1); ax.text(0.995, 1.02, "core–halo 1.00 (inviscid VIC 0.98–1.03)", fontsize=8, ha="left")
 ax.set_xlabel("E / E0"); ax.set_ylabel(f"mean ω/γ0 within r={R}"); ax.set_xlim(0.8, 1.0); ax.set_ylim(0, 1.1)
 ax.invert_xaxis(); ax.legend(fontsize=8, frameon=False, loc="upper right", bbox_to_anchor=(1.0, 0.94))

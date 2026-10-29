@@ -39,5 +39,5 @@ bash runs/ns_conv_fixed_eps.sh     # resolution test at fixed physical edge widt
 ## What to check
 
 - Inviscid core (VIC, r = 0.2): 0.98–1.03γ0 for t = 35–900; seeds 3–5 give 0.94–1.03 for t ≤ 100.
-- Viscous core crosses the multi-level MRS(E) once from above (E/E0 ≈ 0.93–0.95 for ν = 3e-4) and moves below it.
+- Viscous core crosses the multi-level MRS(E) once from above (E/E0 ≈ 0.92–0.96 for ν = 3e-4) and moves below it.
 - Diffusion-only model from t = 50 reproduces the core within 0.004γ0 and E/E0 within 0.0013 on all grids.

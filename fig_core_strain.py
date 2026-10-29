@@ -3,8 +3,7 @@
 
     python fig_core_strain.py
 """
-import re, subprocess
-import sys
+import re, subprocess, sys
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")

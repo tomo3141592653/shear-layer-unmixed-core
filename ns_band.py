@@ -25,6 +25,8 @@ ap.add_argument("--dt", type=float, default=0.005)
 ap.add_argument("--tmax", type=float, default=400.0)
 ap.add_argument("--noise", type=float, default=1e-3)   # 帯の中の渦度のゆらぎ（γ0 に対する割合）
 ap.add_argument("--seed", type=int, default=1)
+ap.add_argument("--noise-grid", default="")               # 例 "256,512": ゆらぎをこの粗い格子で作り、フーリエで補間して載せる（格子を変えても同じ物理のゆらぎ）
+ap.add_argument("--noise-lowpass", default="")            # 例 "256,512": 格子点ごとの雑音から、この粗い格子で表せない細かい成分を落とす
 ap.add_argument("--out", default="ns")
 ap.add_argument("--eps", type=float, default=3.0)       # 帯の縁をならす幅（格子間隔 dz の何倍か）
 a = ap.parse_args()
@@ -50,7 +52,32 @@ eps = a.eps * dz                                           # 帯の縁を格子 
 band = 0.5 * (torch.tanh((w - Z.abs()) / eps) + 1)                    # 物理の帯 |z|<w
 img = 0.5 * (torch.tanh((w - (Z - 2 * ZW).abs()) / eps) + 1)          # 鏡像 z=2ZW（符号反転）
 om = gam0 * (band - img)
-om = om + gam0 * a.noise * torch.randn(NTH, NZ, dtype=DT, device=dev) * (band - img).abs()
+if a.noise_grid:
+    # 格子点ごとの白色雑音のままだと、格子を細かくするほど不安定な波長でのゆらぎが弱くなる（初期条件が格子で変わる）。
+    # 粗い格子 nt×nz で作った雑音を、フーリエ係数をそのまま細かい格子に置き直して（ゼロ詰め）補間する。点ごとの振幅は粗い格子と同じ
+    nt, nzc = (int(x) for x in a.noise_grid.split(","))
+    rc = torch.randn(nt, nzc, dtype=DT, device=dev)
+    if (nt, nzc) == (NTH, NZ):
+        noise = rc
+    else:
+        ch = torch.fft.rfft2(rc)
+        ht, hz = nt // 2, nzc // 2
+        ch[:, hz] *= 0.5                                   # z のナイキストは細かい格子では共役対の片側になるので半分
+        fh = torch.zeros(NTH, NZ // 2 + 1, dtype=ch.dtype, device=dev)
+        fh[:ht, :hz + 1] = ch[:ht]
+        fh[NTH - ht + 1:, :hz + 1] = ch[nt - ht + 1:]
+        fh[ht, :hz + 1] = 0.5 * ch[ht]                     # θ のナイキストは ± に半分ずつ
+        fh[NTH - ht, :hz + 1] = 0.5 * ch[ht]
+        noise = torch.fft.irfft2(fh, s=(NTH, NZ)) * (NTH * NZ) / (nt * nzc)   # 粗い格子の点では元の値と一致する
+else:
+    noise = torch.randn(NTH, NZ, dtype=DT, device=dev)
+    if a.noise_lowpass:
+        # 格子点ごとの雑音から、粗い格子 nt×nz で表せない細かい成分だけを落とす（大きなスケールの成分はそのまま）
+        nt, nzc = (int(x) for x in a.noise_lowpass.split(","))
+        nh = torch.fft.rfft2(noise)
+        nh[(KT.abs() >= nt // 2) | (torch.arange(NZ // 2 + 1, device=dev)[None, :].expand(NTH, -1) >= nzc // 2)] = 0
+        noise = torch.fft.irfft2(nh, s=(NTH, NZ))
+om = om + gam0 * a.noise * noise * (band - img).abs()
 om = om * (4 * math.pi / float((om * (Z.abs() < ZW)).sum() * (2 * math.pi / NTH) * dz))   # 物理側の総循環を 4π に
 omh = torch.fft.rfft2(om) * mask
 

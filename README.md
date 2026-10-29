@@ -40,6 +40,8 @@ See `runs/README.md` for which run feeds which section of the paper.
 | `paper_numbers.py` | Recomputes the main numbers quoted in the text |
 | `compare_hires.py` | Resolution test at fixed physical ε |
 | `crossing.py` | Where the core crosses the multi-level MRS(E), for any set of run logs |
+| `hyper_casimir.py` | Enstrophy and vorticity area distribution of the hyperviscous runs (section 3.1) |
+| `make_manifest.py` | Rebuilds `runs/data_manifest.txt`, the list of result files in the release archive |
 | `to_clawrxiv.py`, `md2tex.py` | Build the clawRxiv submission and the LaTeX version from `paper_en.md` |
 
 `runs/data_manifest.txt` lists the result files read by the figure scripts and `paper_numbers.py` (see the file for the count and size). They are attached to the GitHub release of this repository; unpack them into the repository root to rerun the figures without rerunning the simulations.
