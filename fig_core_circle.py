@@ -48,7 +48,7 @@ if os.path.exists(hf):                                          # 同じ初期�
     t, y = log_series(hf)
     ax.plot(t, y, "-", lw=1.5, color="#6a4c93", label="inviscid (hyperviscous, same initial field as NS)")
 mlf = "mrsL_eps1.npz" if SUF == "_e1" else "mrsL_eps3.npz"       # NS の実際の初期場の渦度分布で解いた多段 MRS
-for name, f, c in (("core–halo", "ch_w008.npz", "#999"), ("MRS 2-level", "mrs_w008.npz", "#555"), ("multi-level MRS (smoothed band)", mlf, "#b5651d")):
+for name, f, c in (("core–halo", "ch_w008.npz", "#999"), ("MRS 2-level", "mrs_w008_256.npz", "#555"), ("multi-level MRS (smoothed band)", mlf, "#b5651d")):
     y = theory_circle(f)
     ax.axhline(y, ls="--", lw=1, color=c)
     below = name in ("core–halo", "MRS 2-level")   # core–halo は上に VIC の点、2値は上に多段の線があるので下に置く
