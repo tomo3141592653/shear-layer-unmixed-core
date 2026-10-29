@@ -10,7 +10,7 @@ Comments in the code are in Japanese; command-line options and output are self-e
 
 ## Requirements
 
-Figures, table and numbers from the result files: Python 3.12, NumPy, Matplotlib (CPU, minutes). Simulations: additionally PyTorch with CUDA; the paper's computations used an RTX 2060 (6 GB).
+Figures, table and numbers from the result files: Python 3.13, NumPy 2.2, Matplotlib 3.10 (CPU, minutes). Simulations: additionally PyTorch 2.10 with CUDA; the paper's computations used an RTX 2060 (6 GB).
 
 ## Simulations and equilibria (`runs/`)
 
@@ -18,12 +18,14 @@ Each script in `runs/` is the exact command line used, run from the repository r
 
 | Code | What it does |
 |---|---|
-| `vic.py` | Inviscid vortex-in-cell (500 000 particles, 256×256 grid) |
+| `vic.py` | Inviscid vortex-in-cell (500 000 particles, 256×256 grid; particle number and grid are options) |
+| `vic_track.py` | The same VIC, saving the same 50 000 labelled particles at every snapshot (seed runs, particle tracking) |
 | `ns_band.py` | Pseudo-spectral Navier–Stokes (Fourier in θ, sine in z with image band), viscous or hyperviscous |
 | `mrs.py` | Two-level (water-bag) MRS equilibrium at a given energy |
 | `mrs_levels.py` | Multi-level MRS for the noise-free smoothed band (Sinkhorn-type fitting of the level areas) |
 | `corehalo.py` | Core–halo prediction (Pakter & Levin) |
 | `relax_levels.py` | Relaxation at the instantaneous Casimirs (Scharfetter–Gummel fluxes) |
+| `strain_vortex.py` | Isolated-vortex control: a vortex with a given radial profile in a ramped uniform strain (section 2.7) |
 
 See `runs/README.md` for which run feeds which section of the paper.
 
@@ -39,6 +41,9 @@ See `runs/README.md` for which run feeds which section of the paper.
 | `diffuse_only.py` | Diffusion-only model (section 3.2) |
 | `paper_numbers.py` | Recomputes the main numbers quoted in the text |
 | `compare_hires.py` | Resolution test at fixed physical ε |
+| `vic_core_circle.py` | Core mean (circle around the maximum of ψ) from VIC snapshots, the same quantity as in `ns_band.py` |
+| `merge_w004.py` | Number of vortices and core mean in the half-width band with successive mergers (w = 0.04) |
+| `ns_omegapsi.py` | Conditional mean of ω on ψ and its rms difference from the predictions (secondary measure) |
 | `crossing.py` | Where the core crosses the multi-level MRS(E), for any set of run logs |
 | `hyper_casimir.py` | Enstrophy and vorticity area distribution of the hyperviscous runs (section 3.1) |
 | `make_manifest.py` | Rebuilds `runs/data_manifest.txt`, the list of result files in the release archive |
