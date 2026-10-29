@@ -214,3 +214,10 @@ for f in ("rlx_sg_t100", "rlx_sg_t200", "rlx_sg_t300", "rlx_sg_t400", "rlx_sg_t3
         st = re.findall(r"step=(\d+) .*?S=([-\d.]+) .*?芯 r=0.2 ([\d.]+)", open(f + ".log").read())
         if st:
             print(f"  {f}: S {float(st[0][1]):.2f}→{float(st[-1][1]):.2f}  芯 {st[0][2]}→{st[-1][2]}（{st[-1][0]} 歩）")
+print("== 2.4 初期の帯で中間の渦度（0.05〜0.95γ0）が運ぶ循環の割合（連続の tanh 分布／NS の格子点）")
+for k in (3, 1):
+    eps = k * 16 / 1024
+    for nm, zz in (("連続", np.linspace(-4, 4, 800001)), ("格子点", -4 + np.arange(512) * 16 / 1024)):
+        s = 0.5 * (np.tanh((0.08 - np.abs(zz)) / eps) + 1)
+        print(f"  ε={k}dz {nm}: {s[(s > 0.05) & (s < 0.95)].sum() / s.sum() * 100:.1f}%", end="")
+    print()
