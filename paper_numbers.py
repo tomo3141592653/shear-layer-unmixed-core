@@ -208,3 +208,9 @@ if os.path.exists("ns_w008_hyper18_t100.npz"):
 print("== 4 議論: 芯の中心が MRS の最大渦度の何倍か（VIC の中心 1.0、超粘性の中心 0.96 / γ0）")
 m2, mL = (float(np.load(f)["G"].max()) * 0.08 for f in ("mrs_w008_256.npz", "mrsL_eps3.npz"))
 print(f"  2値 MRS の最大 {m2:.3f} → VIC {1.0 / m2:.2f} 倍   多段 MRS の最大 {mL:.3f} → 超粘性 {0.96 / mL:.2f} 倍")
+print("== 3.3 その時刻の Casimir を保つ緩和（relax_levels.py --sg、最初と最後の S と芯 r=0.2）")
+for f in ("rlx_sg_t100", "rlx_sg_t200", "rlx_sg_t300", "rlx_sg_t400", "rlx_sg_t300_K5", "rlx_sg_t300_K20", "rlx_sg_vic", "rlx_sg_mrsstart"):
+    if os.path.exists(f + ".log"):
+        st = re.findall(r"step=(\d+) .*?S=([-\d.]+) .*?芯 r=0.2 ([\d.]+)", open(f + ".log").read())
+        if st:
+            print(f"  {f}: S {float(st[0][1]):.2f}→{float(st[-1][1]):.2f}  芯 {st[0][2]}→{st[-1][2]}（{st[-1][0]} 歩）")
